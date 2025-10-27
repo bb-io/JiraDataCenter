@@ -15,14 +15,13 @@ public class IssueTests : TestBase
 
         var project = new ProjectIdentifier
         {
-            ProjectKey = "AC"
+            ProjectKey = "GLS"
         };
         var request = new CreateIssueRequest
         {
-            Summary = "Test issue local2",
-            IssueTypeId = "10006",
+            Summary = "Test issue blackbird",
+            IssueTypeId = "10800",
             Description = "Test description",
-            ParentIssueKey = "AC-1"
         };
         var response = await action.CreateIssue(project, request);
 
@@ -65,6 +64,23 @@ public class IssueTests : TestBase
     }
 
     [TestMethod]
+    public async Task FindIssue_ReturnsSuccess()
+    {
+        var action = new IssueActions(InvocationContext, FileManager);
+
+        var p1roject = new IssueIdentifier
+        {
+            IssueKey = "GLS-16713"
+        };
+        var project = new ProjectIdentifier { ProjectKey = "GLS" };
+        var response = await action.FindIssue("", "Multiple Care Jan 25", project, "");
+
+        var json = Newtonsoft.Json.JsonConvert.SerializeObject(response, Newtonsoft.Json.Formatting.Indented);
+        Console.WriteLine(json);
+        Assert.IsNotNull(response);
+    }
+
+    [TestMethod]
     public async Task ListRecentlyCreatedIssues_ReturnsSuccess()
     {
         var action = new IssueActions(InvocationContext, FileManager);
@@ -72,7 +88,7 @@ public class IssueTests : TestBase
         var project = new ProjectIdentifier { ProjectKey = "GLS" };
         var listRequest = new ListRecentlyCreatedIssuesRequest
         {
-            Hours = 500,
+            //Hours = 500,
             //Labels = ["form", "non-existent-label"],
             //Versions = ["v1.0", "v1.1"]
             //ParentIssue = "AC-8"

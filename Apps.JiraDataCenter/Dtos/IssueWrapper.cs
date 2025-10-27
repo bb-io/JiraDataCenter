@@ -1,4 +1,5 @@
 ﻿
+using Apps.JiraDataCenter.Utils;
 using Blackbird.Applications.Sdk.Common;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -33,8 +34,10 @@ public class IssueFields
 
     public UserDto? Reporter { get; set; }
 
+    [JsonProperty("description")]
+    [JsonConverter(typeof(DescriptionConverter))]
     public Description? Description { get; set; }
-        
+
     public IEnumerable<AttachmentDto>? Attachment { get; set; }
 
     [JsonProperty("labels")]

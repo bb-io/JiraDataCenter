@@ -5,6 +5,7 @@ using Apps.Jira.Models.Requests;
 using Apps.Jira.Models.Responses;
 using Apps.Jira.Utils;
 using Apps.Jira.Webhooks.Payload;
+using Apps.JiraDataCenter.Models.Responses;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Dynamic;
@@ -45,47 +46,59 @@ public class IssueActions(InvocationContext invocationContext, IFileManagementCl
         [ActionParameter] ListRecentlyCreatedIssuesRequest listRequest,
         [ActionParameter][Display("Custom JQL conditions")] string? customJql)
     {
-        List<string> jqlConditions = [
-            $"project={project.ProjectKey}"
-        ];
+        var jqlConditions = new List<string> { $"project={project.ProjectKey}" };
 
         if (listRequest.Hours.HasValue)
+            jqlConditions.Add($"created >= -{listRequest.Hours}h");
+
+        if (listRequest.Labels?.Any() == true)
         {
-            jqlConditions.Add($"Created >= -{listRequest.Hours}h");
+            var labels = '"' + string.Join("\", \"", listRequest.Labels.Where(l => !string.IsNullOrWhiteSpace(l))) + '"';
+            jqlConditions.Add($"labels in ({labels})");
         }
 
-        if (listRequest.Labels != null && listRequest.Labels.Any())
+        if (listRequest.Versions?.Any() == true)
         {
-            var labelsQuotedCommaSeparatedList = '"' + string.Join("\", \"", listRequest.Labels.Where(l => !string.IsNullOrWhiteSpace(l))) + '"';
-            jqlConditions.Add($"labels in ({labelsQuotedCommaSeparatedList})");
-        }
-
-        if (listRequest.Versions != null && listRequest.Versions.Any())
-        {
-            var versionsQuotedCommaSeparatedList = '"' + string.Join("\", \"", listRequest.Versions.Where(v => !string.IsNullOrWhiteSpace(v))) + '"';
-            jqlConditions.Add($"fixVersion in ({versionsQuotedCommaSeparatedList})");
+            var versions = '"' + string.Join("\", \"", listRequest.Versions.Where(v => !string.IsNullOrWhiteSpace(v))) + '"';
+            jqlConditions.Add($"fixVersion in ({versions})");
         }
 
         if (!string.IsNullOrWhiteSpace(listRequest.ParentIssue))
-        {
             jqlConditions.Add($"parent = {listRequest.ParentIssue.Trim()}");
-        }
 
         if (!string.IsNullOrWhiteSpace(customJql))
-        {
             jqlConditions.Add($"({customJql})");
+
+        var jql = string.Join(" AND ", jqlConditions);
+
+        const int pageSize = 50;
+        var startAt = 0;
+        var allIssues = new List<IssueWrapper>();
+
+        while (true)
+        {
+            var req = new JiraRequest("/search", Method.Get);
+            req.AddQueryParameter("jql", jql);
+            req.AddQueryParameter("fields", "id,key,summary,status,priority,assignee,reporter,project,description,labels,subtasks,duedate,parent");
+            req.AddQueryParameter("validateQuery", "false");
+            req.AddQueryParameter("maxResults", pageSize.ToString());
+            req.AddQueryParameter("startAt", startAt.ToString());
+
+            var page = await Client.ExecuteWithHandling<JiraSearchPage<IssueWrapper>>(req);
+
+            if (page?.Issues?.Count > 0)
+                allIssues.AddRange(page.Issues);
+
+            if (page == null || page.Issues.Count == 0 || startAt + page.Issues.Count >= page.Total)
+                break;
+
+            startAt += page.Issues.Count;
         }
-
-        var request = new JiraRequest("/search/jql", Method.Get);
-        request.AddQueryParameter("jql", string.Join(" and ", jqlConditions));
-        request.AddQueryParameter("fields","id,key,summary,status,priority,assignee,reporter,project,description,labels,subtasks,duedate,parent");
-
-        var issues = await Client.ExecuteWithHandling<IssuesWrapper>(request);
 
         return new IssuesResponse
         {
-            Issues = issues.Issues.Select(i => new IssueDto(i)),
-            Count = issues.Issues.Count()
+            Issues = allIssues.Select(i => new IssueDto(i)),
+            Count = allIssues.Count
         };
     }
 
@@ -94,34 +107,29 @@ public class IssueActions(InvocationContext invocationContext, IFileManagementCl
     [ActionParameter] [Display("Parent issue")][DataSource(typeof(IssueDataSourceHandler))]string? parentIssue,
     [ActionParameter] [Display("Summary")] string? issueName,
     [ActionParameter] ProjectIdentifier project,
-    [ActionParameter][Display("Custom JQL conditions")] string? customJql = null)
+    [ActionParameter] [Display("Custom JQL conditions")] string? customJql = null)
     {
         var jqlConditions = new List<string>();
 
-        if (project != null)
-        {
+        if (project != null && !string.IsNullOrWhiteSpace(project.ProjectKey))
             jqlConditions.Add($"project={project.ProjectKey}");
-        }
 
         if (!string.IsNullOrWhiteSpace(parentIssue))
-        {
             jqlConditions.Add($"(parent = {parentIssue.Trim()} OR \"Epic Link\" = {parentIssue.Trim()})");
-        }
 
         if (!string.IsNullOrWhiteSpace(issueName))
-        {
             jqlConditions.Add($"summary ~ \"{issueName.Trim()}\"");
-        }
 
         if (!string.IsNullOrWhiteSpace(customJql))
-        {
             jqlConditions.Add($"({customJql})");
-        }
 
-        var request = new JiraRequest("/search/jql", Method.Get);
-        request.AddQueryParameter("jql", string.Join(" AND ", jqlConditions));
+        var jql = string.Join(" AND ", jqlConditions);
+
+        var request = new JiraRequest("/search", Method.Get);
+        request.AddQueryParameter("jql", jql);
         request.AddQueryParameter("fields", "id,key,summary,status,priority,assignee,reporter,project,description,labels,subtasks,duedate,parent");
         request.AddQueryParameter("maxResults", "1");
+        request.AddQueryParameter("validateQuery", "false");
 
         var issues = await Client.ExecuteWithHandling<IssuesWrapper>(request);
 
@@ -191,30 +199,9 @@ public class IssueActions(InvocationContext invocationContext, IFileManagementCl
 
         var fields = new Dictionary<string, object>
         {
-            { "project", new { key = project.ProjectKey } },
-            { "summary", input.Summary },
-            {
-                "description", new
-                {
-                    version = 1,
-                    type = "doc",
-                    content = new[]
-                    {
-                        new
-                        {
-                            type = "paragraph",
-                            content = new[]
-                            {
-                                new
-                                {
-                                    type = "text",
-                                    text = input.Description ?? ""
-                                }
-                            }
-                        }
-                    }
-                }
-            },
+            { "project",   new { key = project.ProjectKey } },
+            { "summary",   input.Summary },
+            { "description", string.IsNullOrEmpty(input.Description) ? null : input.Description },
             { "issuetype", new { id = input.IssueTypeId } }
         };
 
