@@ -1,6 +1,7 @@
 {
   "ConnectionDefinition": {
-    "token": ""
+    "JiraUrl": "",
+    "Authorization": ""
   },
   "TestFolder": "TestFiles"
 }
