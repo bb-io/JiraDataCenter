@@ -199,6 +199,22 @@ public class DataSources : TestBase
     }
 
     [TestMethod]
+    public async Task ProjectDataSourceHandlerReturnsValues()
+    {
+        var handler = new ProjectDataSourceHandler(InvocationContext);
+
+        var response = await handler.GetDataAsync(new DataSourceContext { SearchString = "" }, CancellationToken.None);
+
+        foreach (var item in response)
+        {
+            Console.WriteLine($"{item.Value}: {item.Key}");
+        }
+
+        Assert.IsNotNull(response);
+
+    }
+
+    [TestMethod]
     public async Task GetIssuesTypeHandlerReturnsValues()
     {
         var handler = new IssueTypeDataSourceHandler(InvocationContext, new ProjectIdentifier { ProjectKey = "AC" });
