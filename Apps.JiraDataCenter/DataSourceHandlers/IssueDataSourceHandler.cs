@@ -14,21 +14,23 @@ public class IssueDataSourceHandler : JiraInvocable, IAsyncDataSourceHandler
     public async Task<Dictionary<string, string>> GetDataAsync(DataSourceContext context,
         CancellationToken cancellationToken)
     {
-
         var projectKeys = await GetProjectKeysAsync(50, cancellationToken);
 
+        var quotedKeys = projectKeys.Select(k => $"\"{k}\"");
+
         var boundedScope = projectKeys.Any()
-            ? $"project in ({string.Join(", ", projectKeys)})"
+            ? $"project in ({string.Join(", ", quotedKeys)})"
             : "updated >= -180d";
 
         string jql = !string.IsNullOrWhiteSpace(context.SearchString)
-           ? $"({boundedScope}) AND (summary ~ \"{EscapeForJql(context.SearchString)}\" OR description ~ \"{EscapeForJql(context.SearchString)}\") ORDER BY updated DESC"
-           : $"{boundedScope} ORDER BY updated DESC";
+            ? $"({boundedScope}) AND (summary ~ \"{EscapeForJql(context.SearchString)}\" OR description ~ \"{EscapeForJql(context.SearchString)}\") ORDER BY updated DESC"
+            : $"{boundedScope} ORDER BY updated DESC";
 
-        var request = new JiraRequest("/search/jql", Method.Get);
+        var request = new JiraRequest("/search", Method.Get);
         request.AddQueryParameter("maxResults", "20");
         request.AddQueryParameter("fields", "summary,project");
         request.AddQueryParameter("fieldsByKeys", "true");
+        request.AddQueryParameter("validateQuery", "false");
         request.AddQueryParameter("jql", jql);
 
         var response = await Client.ExecuteWithHandling<IssuesWrapper>(request);
@@ -44,9 +46,16 @@ public class IssueDataSourceHandler : JiraInvocable, IAsyncDataSourceHandler
         req.AddQueryParameter("maxResults", limit.ToString());
         req.AddQueryParameter("orderBy", "lastIssueUpdatedTime");
 
-        var resp = await Client.ExecuteWithHandling<ProjectSearchResponse>(req);
-        return resp.Values?.Select(v => v.Key).Where(k => !string.IsNullOrWhiteSpace(k)).Distinct().Take(limit).ToList()
-               ?? new List<string>();
+        var legacyReq = new JiraRequest("/project", Method.Get);
+        var legacy = await Client.ExecuteWithHandling<List<ProjectDto>>(legacyReq);
+
+        return legacy?
+            .Select(p => p.Key)
+            .Where(k => !string.IsNullOrWhiteSpace(k))
+            .Distinct()
+            .Take(limit)
+            .ToList()
+            ?? new List<string>();
     }
 
     private static string EscapeForJql(string input)
