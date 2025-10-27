@@ -1,8 +1,9 @@
-﻿using Blackbird.Applications.Sdk.Common.Metadata;
+﻿using Blackbird.Applications.Sdk.Common;
+using Blackbird.Applications.Sdk.Common.Metadata;
 
 namespace Apps.Jira;
 
-internal class JiraApplication : ICategoryProvider
+internal class JiraApplication : IApplication, ICategoryProvider
 {
     public IEnumerable<ApplicationCategory> Categories
     {
@@ -15,5 +16,10 @@ internal class JiraApplication : ICategoryProvider
     {
         get => "Jira Data Center";
         set { }
+    }
+
+    public T GetInstance<T>()
+    {
+        throw new NotImplementedException();
     }
 }
