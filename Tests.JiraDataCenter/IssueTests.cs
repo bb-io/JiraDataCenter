@@ -1,6 +1,7 @@
 ﻿using Apps.Jira.Actions;
 using Apps.Jira.Models.Identifiers;
 using Apps.Jira.Models.Requests;
+using Apps.JiraDataCenter.Models.Requests;
 using Tests.Appname.Base;
 
 namespace Tests.Appname;
@@ -121,5 +122,26 @@ public class IssueTests : TestBase
         };
         await action.AddIssueComment(issue, request);
         Assert.IsTrue(true);
+    }
+
+    [TestMethod]
+    public async Task CloneIssue_ReturnsSuccess()
+    {
+        var action = new IssueActions(InvocationContext, FileManager);
+
+        var project = new IssueIdentifier
+        {
+            IssueKey = "GLS-16713"
+        };
+        var clone = new CloneIssueRequest
+        {
+            ReporterName= "marenb"
+        };
+
+        var response = await action.CloneIssue(project, clone);
+
+        var json = Newtonsoft.Json.JsonConvert.SerializeObject(response, Newtonsoft.Json.Formatting.Indented);
+        Console.WriteLine(json);
+        Assert.IsNotNull(response);
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Apps.Jira.Utils;
 using Blackbird.Applications.Sdk.Common;
+using Newtonsoft.Json.Linq;
 
 namespace Apps.Jira.Dtos;
 
@@ -16,7 +17,7 @@ public class IssueDto
         Assignee = issueWrapper.Fields.Assignee;
         Reporter = issueWrapper.Fields.Reporter;
         Project = issueWrapper.Fields.Project ?? new ProjectDto();
-        Description = issueWrapper.Fields.Description == null ? string.Empty : JiraDocToMarkdownConverter.ConvertToMarkdown(issueWrapper.Fields.Description);
+        Description = ConvertDescriptionToString(issueWrapper?.Fields?.DescriptionRaw);
         Labels = issueWrapper.Fields.Labels;
         SubTasks = issueWrapper.Fields.SubTasks?
             .Select(subTask => new SubTaskDto
@@ -59,6 +60,25 @@ public class IssueDto
 
     [Display("Due date")]
     public DateTime? DueDate { get; set; }
+
+    private static string? ConvertDescriptionToString(JToken? raw)
+    {
+        if (raw is null || raw.Type == JTokenType.Null)
+            return null;
+
+        if (raw.Type == JTokenType.String)
+            return raw.Value<string>();
+
+        try
+        {
+            var adf = raw.ToObject<Apps.Jira.Dtos.Description>();
+            return adf is null ? null : JiraDocToMarkdownConverter.ConvertToMarkdown(adf);
+        }
+        catch
+        {
+            return raw.ToString(Newtonsoft.Json.Formatting.None);
+        }
+    }
 }
 
 public class SubTaskDto
@@ -72,3 +92,4 @@ public class SubTaskDto
     [Display("Subtask summary")]
     public string Summary { get; set; } = default!;
 }
+

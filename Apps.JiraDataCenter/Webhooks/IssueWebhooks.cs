@@ -382,7 +382,7 @@ namespace Apps.Jira.Webhooks
                 IssueKey = i.Key,
                 ProjectKey = i.Fields?.Project?.Key,
                 Summary = i.Fields?.Summary,
-                Description = ExtractPlainText(i.Fields?.Description),
+                //Description = ExtractPlainText(i.Fields?.Description),
                 IssueType = i.Fields?.IssueType?.Name,
                 Priority = i.Fields?.Priority?.Name,
                 AssigneeName = i.Fields?.Assignee?.DisplayName,
