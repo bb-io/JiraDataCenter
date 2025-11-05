@@ -30,5 +30,8 @@ namespace Apps.JiraDataCenter.Models.Requests
         [Display("Reporter name")]
         [DataSource(typeof(AssigneeDataSourceHandler))]
         public string? ReporterName { get; set; }
+
+        [Display("Due date")]
+        public DateTime? NewDueDate { get; set; }
     }
 }
