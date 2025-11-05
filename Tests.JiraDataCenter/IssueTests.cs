@@ -54,7 +54,7 @@ public class IssueTests : TestBase
 
         var project = new IssueIdentifier
         {
-            IssueKey = "GLS-16713"
+            IssueKey = "GLS-18902"
         };
 
         var response = await action.GetIssueByKey(project);
@@ -131,11 +131,12 @@ public class IssueTests : TestBase
 
         var project = new IssueIdentifier
         {
-            IssueKey = "GLS-16713"
+            IssueKey = "GLS-18902"
         };
         var clone = new CloneIssueRequest
         {
-            ReporterName= "marenb"
+            NewDueDate = DateTime.Now.AddDays(7),
+            NewDescription = "Cloned issue description",
         };
 
         var response = await action.CloneIssue(project, clone);
