@@ -6,7 +6,7 @@
         <Nullable>enable</Nullable>
         <Product>Jira Data Center [Beta]</Product>
         <Description>Issue tracking</Description>
-        <Version>1.0.3</Version>
+        <Version>1.0.4</Version>
         <AssemblyName>Apps.JiraDataCenter</AssemblyName>
     </PropertyGroup>
 
