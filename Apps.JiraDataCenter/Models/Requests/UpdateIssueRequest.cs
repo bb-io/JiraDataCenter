@@ -1,4 +1,5 @@
 ﻿using Apps.Jira.DataSourceHandlers;
+using Apps.JiraDataCenter.DataSourceHandlers;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 
@@ -7,7 +8,7 @@ namespace Apps.Jira.Models.Requests;
 public class UpdateIssueRequest
 {
     [Display("Status (transition) ID")]
-    [DataSource(typeof(IssueStatusDataSourceHandler))]
+    [DataSource(typeof(IssueAvailableStatusesDataSourceHandler))]
     public string? StatusId { get; set; }
     
     [Display("Assignee account ID")]

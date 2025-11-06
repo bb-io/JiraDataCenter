@@ -613,90 +613,85 @@ public class IssueActions(InvocationContext invocationContext, IFileManagementCl
     #region PUT
 
     [Action("Update issue", Description = "Update issue, specifying only the fields that require updating.")]
-    public async Task UpdateIssue([ActionParameter] ProjectIdentifier projectIdentifier,
+    public async Task<IssueDto> UpdateIssue([ActionParameter] ProjectIdentifier projectIdentifier,
         [ActionParameter] IssueIdentifier issue,
         [ActionParameter] UpdateIssueRequest input)
     {
-        if (input.AssigneeAccountId != null)
+        if (!string.IsNullOrWhiteSpace(input.AssigneeAccountId))
         {
-            var accountId = input.AssigneeAccountId;
-            if (int.TryParse(accountId, out var accountIntId) && accountIntId == int.MinValue)
-                accountId = null;
-
             var assigneeRequest = new JiraRequest($"/issue/{issue.IssueKey}/assignee", Method.Put)
-                .WithJsonBody(new { accountId });
+                .WithJsonBody(new { name = input.AssigneeAccountId });
             await Client.ExecuteWithHandling(assigneeRequest);
         }
 
+        var fields = new Dictionary<string, object>();
+        var update = new Dictionary<string, object>();
 
-        if (input.Summary != null || input.Description != null || input.IssueTypeId != null ||
-            !string.IsNullOrEmpty(input.OriginalEstimate) || input.DueDate.HasValue || !string.IsNullOrEmpty(input.Reporter))
+        if (!string.IsNullOrWhiteSpace(input.Summary))
+            fields["summary"] = input.Summary;
+
+        if (!string.IsNullOrWhiteSpace(input.Description))
         {
-            var fieldsUpdate = new Dictionary<string, object>();
+            var wiki = input.Description;
+            fields["description"] = wiki;
+        }
 
-            if (input.Summary != null)
-                fieldsUpdate.Add("summary", input.Summary);
+        if (!string.IsNullOrWhiteSpace(input.IssueTypeId))
+            fields["issuetype"] = new { id = input.IssueTypeId };
 
-            if (input.Description != null)
+        if (!string.IsNullOrWhiteSpace(input.OriginalEstimate))
+        {
+            update["timetracking"] = new[]
             {
-                var descriptionJson = MarkdownToJiraConverter.ConvertMarkdownToJiraDoc(input.Description);
-                fieldsUpdate.Add("description", descriptionJson);
-            }
-
-            if (input.IssueTypeId != null)
-                fieldsUpdate.Add("issuetype", new { id = input.IssueTypeId });
-
-
-            if (!string.IsNullOrEmpty(input.OriginalEstimate))
+            new Dictionary<string, object>
             {
-                fieldsUpdate.Add("timetracking", new { originalEstimate = input.OriginalEstimate});
+                ["set"] = new { originalEstimate = input.OriginalEstimate }
             }
+        };
+        }
 
-            if (input.DueDate.HasValue)
-            {
-                fieldsUpdate.Add("duedate", input.DueDate.Value.ToString("yyyy-MM-dd"));
-            }
+        if (input.DueDate.HasValue)
+            fields["duedate"] = input.DueDate.Value.ToString("yyyy-MM-dd");
 
-            if (!string.IsNullOrEmpty(input.Reporter))
-            {
-                fieldsUpdate.Add("reporter", new { id = input.Reporter });
-            }
+        if (!string.IsNullOrWhiteSpace(input.Reporter))
+            fields["reporter"] = new { name = input.Reporter }; 
 
+        if (fields.Count > 0 || update.Count > 0)
+        {
             var endpoint = $"/issue/{issue.IssueKey}";
-            if (input.OverrideScreenSecurity.HasValue)
-            {
-                endpoint += $"?overrideScreenSecurity={input.OverrideScreenSecurity.Value}";
-            }
-            if (input.NotifyUsers.HasValue)
-            {
-                endpoint = endpoint + (input.OverrideScreenSecurity.HasValue ? "&" : "?") +
-                           $"notifyUsers={input.NotifyUsers}";
-            }
+
+            var qs = new List<string>();
+            if (input.OverrideScreenSecurity == true) qs.Add("overrideScreenSecurity=true");
+            if (input.NotifyUsers.HasValue) qs.Add($"notifyUsers={input.NotifyUsers.Value.ToString().ToLower()}");
+            if (qs.Count > 0) endpoint += "?" + string.Join("&", qs);
+
+            var payload = new Dictionary<string, object>();
+            if (fields.Count > 0) payload["fields"] = fields;
+            if (update.Count > 0) payload["update"] = update;
 
             var updateRequest = new JiraRequest(endpoint, Method.Put)
-                .WithJsonBody(new { fields = fieldsUpdate },
-                    new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+                .WithJsonBody(payload, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
 
             await Client.ExecuteWithHandling(updateRequest);
         }
 
-
-        if (input.StatusId != null)
+        if (!string.IsNullOrWhiteSpace(input.StatusId))
         {
             var getTransitionsRequest = new JiraRequest($"/issue/{issue.IssueKey}/transitions", Method.Get);
             var transitions = await Client.ExecuteWithHandling<TransitionsResponse>(getTransitionsRequest);
 
-            var targetTransition = transitions.Transitions
-                .FirstOrDefault(transition => transition.To.Id == input.StatusId);
-
-            if (targetTransition != null)
+            var target = transitions.Transitions.FirstOrDefault(t => t.To?.Id == input.StatusId);
+            if (target != null)
             {
                 var transitionRequest = new JiraRequest($"/issue/{issue.IssueKey}/transitions", Method.Post)
-                    .WithJsonBody(new { transition = new { id = targetTransition.Id } });
-
+                    .WithJsonBody(new { transition = new { id = target.Id } });
                 await Client.ExecuteWithHandling(transitionRequest);
             }
         }
+        var issueResponse = await GetIssueByKey(issue);
+
+        return issueResponse;
+
     }
 
     //[Action("Append to issue description", Description = "Appends additional text with optional formatting to an issue's description.")]

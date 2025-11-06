@@ -3,6 +3,7 @@ using Apps.Jira.DataSourceHandlers;
 using Apps.Jira.DataSourceHandlers.CustomFields;
 using Apps.Jira.Models.Identifiers;
 using Apps.Jira.Models.Requests;
+using Apps.JiraDataCenter.DataSourceHandlers;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 using Blackbird.Applications.Sdk.Common.Exceptions;
 using Tests.Appname.Base;
@@ -318,6 +319,18 @@ public class DataSources : TestBase
 
     }
 
+    [TestMethod]
+    public async Task IssueAvailableStatusesDataSourceHandler_ReturnsValues()
+    {
+        var handler = new IssueAvailableStatusesDataSourceHandler(InvocationContext, new IssueIdentifier { IssueKey= "GLS-18918" });
+
+        var response = await handler.GetDataAsync(new DataSourceContext { SearchString=""}, CancellationToken.None);
+
+        var json = Newtonsoft.Json.JsonConvert.SerializeObject(response, Newtonsoft.Json.Formatting.Indented);
+        Console.WriteLine(json);
+        Assert.IsNotNull(response);
+
+    }
 
     [TestMethod]
     public async Task Get_User_email_ReturnsValues()

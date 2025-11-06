@@ -36,15 +36,18 @@ public class IssueTests : TestBase
     {
         // Arrange
         var action = new IssueActions(InvocationContext, FileManager);
-        var project = new ProjectIdentifier { ProjectKey = "TL" };
-        var issue = new IssueIdentifier { IssueKey = "TL-11" };
+        var project = new ProjectIdentifier { ProjectKey = "GLS" };
+        var issue = new IssueIdentifier { IssueKey = "GLS-18918" };
         var request = new UpdateIssueRequest
         {
-            StatusId = "3",
+            StatusId = "171",
         };
 
         // Act
-        await action.UpdateIssue(project, issue, request);
+        var response = await action.UpdateIssue(project, issue, request);
+        var json = Newtonsoft.Json.JsonConvert.SerializeObject(response, Newtonsoft.Json.Formatting.Indented);
+        Console.WriteLine(json);
+        Assert.IsNotNull(true);
     }
 
     [TestMethod]
@@ -54,7 +57,7 @@ public class IssueTests : TestBase
 
         var project = new IssueIdentifier
         {
-            IssueKey = "GLS-18902"
+            IssueKey = "GLS-18918"
         };
 
         var response = await action.GetIssueByKey(project);
@@ -137,6 +140,7 @@ public class IssueTests : TestBase
         {
             NewDueDate = DateTime.Now.AddDays(7),
             NewDescription = "Cloned issue description",
+            LinkTypeName = "Cloners",
         };
 
         var response = await action.CloneIssue(project, clone);
