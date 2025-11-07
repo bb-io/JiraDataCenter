@@ -7,7 +7,7 @@ namespace Apps.Jira.Models.Requests;
 
 public class UpdateIssueRequest
 {
-    [Display("Status (transition) ID")]
+    [Display("New status ID")]
     [DataSource(typeof(IssueAvailableStatusesDataSourceHandler))]
     public string? StatusId { get; set; }
     
