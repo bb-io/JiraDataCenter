@@ -233,6 +233,18 @@ public class IssueActions(InvocationContext invocationContext, IFileManagementCl
         if (!string.IsNullOrEmpty(input.ParentIssueKey))
             fields.Add("parent", new { key = input.ParentIssueKey });
 
+        if (input.Labels is { } labels && labels.Any())
+        {
+            var normalized = labels
+                .Where(l => !string.IsNullOrWhiteSpace(l))
+                .Select(l => l.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            if (normalized.Length > 0)
+                fields.Add("labels", normalized);
+        }
+
         var request = new JiraRequest("/issue", Method.Post).AddJsonBody(new
         {
             fields = fields
@@ -240,6 +252,53 @@ public class IssueActions(InvocationContext invocationContext, IFileManagementCl
 
         var createdIssue = await Client.ExecuteWithHandling<CreatedIssueDto>(request);
         return createdIssue;
+    }
+
+    [Action("Remove labels from issue", Description = "Remove labels from a specific issue. Either provide labels list or enable 'Clear all labels'.")]
+    public async Task<IssueDto> RemoveLabelsFromIssue(
+    [ActionParameter] IssueIdentifier issue,
+    [ActionParameter] RemoveLabelsRequest input)
+    {
+        var labels = (input.Labels ?? Enumerable.Empty<string>())
+            .Where(l => !string.IsNullOrWhiteSpace(l))
+            .Select(l => l.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var clearAll = input.ClearAll == true;
+
+        if (!clearAll && labels.Count == 0)
+            throw new PluginMisconfigurationException("Provide at least one label to remove or enable 'Clear all labels'.");
+
+        object payload;
+
+        if (clearAll)
+        {
+            payload = new
+            {
+                fields = new
+                {
+                    labels = Array.Empty<string>()
+                }
+            };
+        }
+        else
+        {
+            payload = new
+            {
+                update = new
+                {
+                    labels = labels.Select(l => new { remove = l })
+                }
+            };
+        }
+
+        var request = new JiraRequest($"/issue/{issue.IssueKey}", Method.Put)
+            .WithJsonBody(payload, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+
+        await Client.ExecuteWithHandling(request);
+
+        return await GetIssueByKey(issue);
     }
 
     [Action("Clone issue", Description = "Jira Data Center/Server: clone an issue copying summary, description, labels, assignee, reporter, due date, parent, and all creatable custom fields. Links new issue to source as 'Cloners'. Optionally copy status.")]

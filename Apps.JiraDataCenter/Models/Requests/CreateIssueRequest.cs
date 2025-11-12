@@ -1,4 +1,5 @@
 ﻿using Apps.Jira.DataSourceHandlers;
+using Apps.JiraDataCenter.DataSourceHandlers;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 
@@ -31,4 +32,8 @@ public class CreateIssueRequest
     [Display("Parent issue key")]
     [DataSource(typeof(IssueDataSourceHandler))]
     public string? ParentIssueKey { get; set; }
+
+    [Display("Labels", Description = "Optional list of labels (Jira labels are strings).")]
+    [DataSource(typeof(IssueLabelDataHandler))]
+    public IEnumerable<string>? Labels { get; set; }
 }

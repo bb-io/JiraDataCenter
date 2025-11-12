@@ -1,6 +1,7 @@
 ﻿using Apps.Jira.Actions;
 using Apps.Jira.Models.Identifiers;
 using Apps.Jira.Models.Requests;
+using Apps.JiraDataCenter.DataSourceHandlers;
 using Apps.JiraDataCenter.Models.Requests;
 using Tests.Appname.Base;
 
@@ -57,7 +58,7 @@ public class IssueTests : TestBase
 
         var project = new IssueIdentifier
         {
-            IssueKey = "GLS-18918"
+            IssueKey = "GLS-18889"
         };
 
         var response = await action.GetIssueByKey(project);
@@ -65,6 +66,57 @@ public class IssueTests : TestBase
         var json = Newtonsoft.Json.JsonConvert.SerializeObject(response, Newtonsoft.Json.Formatting.Indented);
         Console.WriteLine(json);
         Assert.IsNotNull(response);
+    }
+
+    [TestMethod]
+    public async Task IssueLabelsDataHandler_ReturnsSuccess()
+    {
+        var action = new IssueLabelDataHandler(InvocationContext);
+
+        var response = await action.GetDataAsync(new Blackbird.Applications.Sdk.Common.Dynamic.DataSourceContext { }, CancellationToken.None);
+
+        var json = Newtonsoft.Json.JsonConvert.SerializeObject(response, Newtonsoft.Json.Formatting.Indented);
+        Console.WriteLine(json);
+        Assert.IsNotNull(response);
+    }
+
+    [TestMethod]
+    public async Task RemoveLabelsFromIssue_ReturnsSuccess()
+    {
+        var action = new IssueActions(InvocationContext, FileManager);
+
+        var project = new IssueIdentifier
+        {
+            IssueKey = "GLS-18889"
+        };
+
+        var response = await action.RemoveLabelsFromIssue(project, new RemoveLabelsRequest { Labels = new List<string> { "BlackbirdTest1", "BlackbirdTest2", "BlackbirdTest3", "BlackbirdTest4" } });
+
+        var json = Newtonsoft.Json.JsonConvert.SerializeObject(response, Newtonsoft.Json.Formatting.Indented);
+        Console.WriteLine(json);
+        Assert.IsNotNull(response);
+    }
+
+    [TestMethod]
+    public async Task AddIssueLabels_ReturnsSuccess()
+    {
+        var action = new IssueActions(InvocationContext, FileManager);
+
+        var project = new ProjectIdentifier
+        {
+            ProjectKey = "GLS"
+        };
+
+        var issue = new IssueIdentifier
+        {
+            IssueKey = "GLS-18889"
+        };
+        var request = new AddLabelsRequest
+        {
+            Labels = new List<string> { "BlackbirdTest1", "BlackbirdTest2", "BlackbirdTest3", "BlackbirdTest4" }
+        };
+        await action.AddLabelsToIssue(issue, request);
+        Assert.IsTrue(true);
     }
 
     [TestMethod]
