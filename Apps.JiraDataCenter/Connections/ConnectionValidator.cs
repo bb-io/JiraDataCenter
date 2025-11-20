@@ -22,12 +22,12 @@ public class ConnectionValidator : IConnectionValidator
                 Message = "Success"
             };
         }
-        catch (Exception)
+        catch (Exception e)
         {
             return new ConnectionValidationResponse
             {
                 IsValid = false,
-                Message = "Ping failed"
+                Message = $"Ping failed: {e.Message}"
             };
         }
     }
