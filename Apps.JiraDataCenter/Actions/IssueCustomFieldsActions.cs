@@ -3,6 +3,7 @@ using Apps.Jira.Dtos;
 using Apps.Jira.Models.Identifiers;
 using Apps.Jira.Models.Requests;
 using Apps.Jira.Models.Responses;
+using Apps.JiraDataCenter.Models.Identifiers;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Dynamic;
@@ -15,12 +16,8 @@ using RestSharp;
 namespace Apps.Jira.Actions;
 
 [ActionList]
-public class IssueCustomFieldsActions : JiraInvocable
+public class IssueCustomFieldsActions(InvocationContext invocationContext) : JiraInvocable(invocationContext)
 {
-    public IssueCustomFieldsActions(InvocationContext invocationContext) : base(invocationContext)
-    {
-    }
-
     #region Get
 
     [Action("Get custom text field value",
@@ -43,7 +40,6 @@ public class IssueCustomFieldsActions : JiraInvocable
 
     }
 
-
     [Action("Get custom number field value",
         Description = "Retrieve the value of a custom number field for a specific issue.")]
     public async Task<GetCustomFieldValueResponse<string>> GetCustomNumericFieldValue(
@@ -63,7 +59,6 @@ public class IssueCustomFieldsActions : JiraInvocable
         }
 
     }
-
 
     [Action("Get custom dropdown field value",
         Description = "Retrieve the value of a custom dropdown field for a specific issue.")]
@@ -107,7 +102,7 @@ public class IssueCustomFieldsActions : JiraInvocable
     [Action("Get custom multiselect field values",
     Description = "Retrieve the values of a custom multiselect field for a specific issue.")]
     public async Task<List<string>> GetCustomMultiselectFieldValue(
-    [ActionParameter] IssueIdentifier issue, [ActionParameter] CustomMultiselectFieldIdentifier customMultiselectField)
+        [ActionParameter] IssueIdentifier issue, [ActionParameter] CustomMultiselectFieldIdentifier customMultiselectField)
     {
         var getIssueResponse = await GetIssue(issue.IssueKey);
         JObject Parsedissue = JObject.Parse(getIssueResponse.Content);
@@ -140,6 +135,44 @@ public class IssueCustomFieldsActions : JiraInvocable
             }
         }
         return values;
+    }
+
+    [Action("Get custom link field value", Description = "Retrieve the issue key from a link field.")]
+    public async Task<GetCustomFieldValueResponse<string>> GetCustomLinkFieldValue(
+        [ActionParameter] IssueIdentifier issue,
+        [ActionParameter] CustomLinkFieldIdentifier customLinkField)
+    {
+        var getIssueResponse = await GetIssue(issue.IssueKey);
+        try
+        {
+            var root = JObject.Parse(getIssueResponse.Content);
+            var fields = root["fields"];
+
+            if (fields == null) return new GetCustomFieldValueResponse<string>();
+
+            var fieldData = fields[customLinkField.CustomLinkFieldId];
+            if (fieldData == null || fieldData.Type == JTokenType.Null)
+                return new GetCustomFieldValueResponse<string>();
+
+            string resultKey = string.Empty;
+
+            if (fieldData.Type == JTokenType.String)
+                resultKey = fieldData.ToString();
+
+            else if (fieldData.Type == JTokenType.Object)
+            {
+                if (fieldData["key"] != null)
+                    resultKey = fieldData["key"].ToString();
+                else if (fieldData["data"] != null && fieldData["data"]["key"] != null)
+                    resultKey = fieldData["data"]["key"].ToString();
+            }
+
+            return new GetCustomFieldValueResponse<string> { Value = resultKey };
+        }
+        catch
+        {
+            return new GetCustomFieldValueResponse<string>();
+        }
     }
 
     #endregion
@@ -178,7 +211,6 @@ public class IssueCustomFieldsActions : JiraInvocable
 
         await SetCustomFieldValue(requestBody, issue.IssueKey);
     }
-
 
     [Action("Set custom number field value",
         Description = "Set the value of a custom string field for a specific issue.")]
@@ -232,10 +264,10 @@ public class IssueCustomFieldsActions : JiraInvocable
 
     [Action("Set custom rich text field value", Description = "Set the value of a custom rich text field for a specific issue.")]
     public async Task SetCustomRichTextFieldValue(
-    [ActionParameter] IssueIdentifier issue,
-    [ActionParameter] CustomStringFieldIdentifier customTextField,
-    [ActionParameter][Display("Text")] string text,
-    [ActionParameter] RichTextMarksRequest marks = null)
+        [ActionParameter] IssueIdentifier issue,
+        [ActionParameter] CustomStringFieldIdentifier customTextField,
+        [ActionParameter][Display("Text")] string text,
+        [ActionParameter] RichTextMarksRequest marks = null)
     {
         var targetField = await GetCustomFieldData(customTextField.CustomStringFieldId);
 
@@ -304,6 +336,20 @@ public class IssueCustomFieldsActions : JiraInvocable
     };
 
         var requestBody = JsonConvert.SerializeObject(jsonBody);
+        await SetCustomFieldValue(requestBody, issue.IssueKey);
+    }
+
+    [Action("Set custom link field value", Description = "Set a link field using an issue key.")]
+    public async Task SetCustomLinkFieldValue(
+        [ActionParameter] IssueIdentifier issue,
+        [ActionParameter] CustomLinkFieldIdentifier customLinkField,
+        [ActionParameter][Display("Target Issue Key")] string targetIssueKey)
+    {
+        var requestBody = new
+        {
+            fields = new Dictionary<string, string> { { customLinkField.CustomLinkFieldId, targetIssueKey } }
+        };
+
         await SetCustomFieldValue(requestBody, issue.IssueKey);
     }
 
