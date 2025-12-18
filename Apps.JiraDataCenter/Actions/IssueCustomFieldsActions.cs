@@ -342,12 +342,12 @@ public class IssueCustomFieldsActions(InvocationContext invocationContext) : Jir
     [Action("Set custom link field value", Description = "Set a link field using an issue key.")]
     public async Task SetCustomLinkFieldValue(
         [ActionParameter] IssueIdentifier issue,
-        [ActionParameter] CustomLinkFieldIdentifier customLinkField,
-        [ActionParameter][Display("Target Issue Key")] string targetIssueKey)
+        [ActionParameter] TargetIssueIdentifier targetIssueKey,
+        [ActionParameter] CustomLinkFieldIdentifier customLinkField)
     {
         var requestBody = new
         {
-            fields = new Dictionary<string, string> { { customLinkField.CustomLinkFieldId, targetIssueKey } }
+            fields = new Dictionary<string, string> { { customLinkField.CustomLinkFieldId, targetIssueKey.TargetIssueKey } }
         };
 
         await SetCustomFieldValue(requestBody, issue.IssueKey);

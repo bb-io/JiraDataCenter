@@ -209,12 +209,12 @@ public class IssueTests : TestBase
     {
         // Arrange
         var actions = new IssueCustomFieldsActions(InvocationContext);
-        var issueId = new IssueIdentifier { IssueKey = "GLS-17039" };
+        var issue = new IssueIdentifier { IssueKey = "GLS-17039" };
         var link = new CustomLinkFieldIdentifier { CustomLinkFieldId = "customfield_17230" };
-        string parentIssue = "GLS-16693";
+        var targetIssue = new TargetIssueIdentifier { TargetIssueKey = "GLS-16693" };
 
         // Act
-        await actions.SetCustomLinkFieldValue(issueId, link, parentIssue);
+        await actions.SetCustomLinkFieldValue(issue, targetIssue, link);
     }
 
     [TestMethod]
