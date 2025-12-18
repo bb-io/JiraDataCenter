@@ -1,9 +1,11 @@
-﻿using Apps.Jira.Actions;
-using Apps.Jira.Models.Identifiers;
-using Apps.Jira.Models.Requests;
-using Apps.JiraDataCenter.DataSourceHandlers;
-using Apps.JiraDataCenter.Models.Requests;
+﻿using Newtonsoft.Json;
 using Tests.Appname.Base;
+using Apps.Jira.Actions;
+using Apps.Jira.Models.Requests;
+using Apps.Jira.Models.Identifiers;
+using Apps.JiraDataCenter.Models.Requests;
+using Apps.JiraDataCenter.Models.Identifiers;
+using Apps.JiraDataCenter.DataSourceHandlers;
 
 namespace Tests.Appname;
 
@@ -63,7 +65,7 @@ public class IssueTests : TestBase
 
         var response = await action.GetIssueByKey(project);
 
-        var json = Newtonsoft.Json.JsonConvert.SerializeObject(response, Newtonsoft.Json.Formatting.Indented);
+        var json = JsonConvert.SerializeObject(response, Formatting.Indented);
         Console.WriteLine(json);
         Assert.IsNotNull(response);
     }
@@ -200,5 +202,34 @@ public class IssueTests : TestBase
         var json = Newtonsoft.Json.JsonConvert.SerializeObject(response, Newtonsoft.Json.Formatting.Indented);
         Console.WriteLine(json);
         Assert.IsNotNull(response);
+    }
+
+    [TestMethod]
+    public async Task SetCustomLinkFieldValue_ReturnsSuccess()
+    {
+        // Arrange
+        var actions = new IssueCustomFieldsActions(InvocationContext);
+        var issue = new IssueIdentifier { IssueKey = "GLS-17039" };
+        var link = new CustomLinkFieldIdentifier { CustomLinkFieldId = "customfield_17230" };
+        var targetIssue = new TargetIssueIdentifier { TargetIssueKey = "GLS-16693" };
+
+        // Act
+        await actions.SetCustomLinkFieldValue(issue, targetIssue, link);
+    }
+
+    [TestMethod]
+    public async Task GetCustomLinkFieldValue_ReturnsSuccess()
+    {
+        // Arrange
+        var actions = new IssueCustomFieldsActions(InvocationContext);
+        var issueId = new IssueIdentifier { IssueKey = "GLS-17039" };
+        var link = new CustomLinkFieldIdentifier { CustomLinkFieldId = "customfield_17230" };
+
+        // Act
+        var result = await actions.GetCustomLinkFieldValue(issueId, link);
+
+        // Assert
+        Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+        Assert.IsNotNull(result);
     }
 }

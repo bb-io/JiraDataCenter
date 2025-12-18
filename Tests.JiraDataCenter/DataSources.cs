@@ -4,6 +4,7 @@ using Apps.Jira.DataSourceHandlers.CustomFields;
 using Apps.Jira.Models.Identifiers;
 using Apps.Jira.Models.Requests;
 using Apps.JiraDataCenter.DataSourceHandlers;
+using Apps.JiraDataCenter.DataSourceHandlers.CustomFields;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 using Blackbird.Applications.Sdk.Common.Exceptions;
 using Tests.Appname.Base;
@@ -27,6 +28,22 @@ public class DataSources : TestBase
 
         Assert.IsNotNull(response);
 
+    }
+
+    [TestMethod]
+    public async Task CustomLinkFieldDataSourceHandlerReturnsValues()
+    {
+        // Arrange
+        var handler = new CustomLinkFieldDataSourceHandler(InvocationContext);
+
+        // Act
+        var response = await handler.GetDataAsync(new DataSourceContext { SearchString = "" }, CancellationToken.None);
+
+        // Assert
+        foreach (var item in response)
+            Console.WriteLine($"{item.Value}: {item.DisplayName}");
+
+        Assert.IsNotNull(response);
     }
 
     [TestMethod]

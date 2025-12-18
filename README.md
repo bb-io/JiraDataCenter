@@ -85,10 +85,12 @@ Please note: sending too many parallel requests to Jira may result in request re
 - **Get custom date field value** returns the value of a custom date field for a specific issue.
 - **Set custom date field value** sets the value of a custom date field for a specific issue.
 - **Get custom multiselect field values** gets the selected values of a multiple choice select list custom field for a specific issue.
+- **Set custom multiselect field value** sets the value of a custom multiselect field
 - **Get custom number field value** gets the value of a custom number field
 - **Set custom number field value** sets the value of a custom number field
 - **Set custom rich text field value** sets the value of a custom rich text field
-- **Set custom multiselect field value** sets the value of a custom multiselect field
+- **Get custom link field value** gets the issue key from a link field.
+- **Set custom link field value** sets a link field using an issue key.
 
 ### User Actions
 
