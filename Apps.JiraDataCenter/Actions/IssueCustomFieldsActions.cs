@@ -1,4 +1,5 @@
-﻿using Apps.Jira.DataSourceHandlers.CustomFields;
+﻿using RestSharp;
+using Apps.Jira.DataSourceHandlers.CustomFields;
 using Apps.Jira.Dtos;
 using Apps.Jira.Models.Identifiers;
 using Apps.Jira.Models.Requests;
@@ -11,7 +12,6 @@ using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using RestSharp;
 
 namespace Apps.Jira.Actions;
 
