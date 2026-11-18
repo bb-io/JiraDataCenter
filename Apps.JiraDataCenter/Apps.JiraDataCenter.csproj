@@ -6,7 +6,7 @@
         <Nullable>enable</Nullable>
         <Product>Jira Data Center [Beta]</Product>
         <Description>Issue tracking</Description>
-        <Version>1.0.9</Version>
+        <Version>1.0.10</Version>
         <AssemblyName>Apps.JiraDataCenter</AssemblyName>
     </PropertyGroup>
 
@@ -21,4 +21,7 @@
         <EmbeddedResource CopyToOutputDirectory="Always" Include="image\icon.png" />
     </ItemGroup>
 
+    <ItemGroup>
+        <EmbeddedResource Include="..\README.md" Link="README.md" CopyToOutputDirectory="Always" />
+    </ItemGroup>
 </Project>
